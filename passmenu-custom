@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+shopt -s nullglob globstar lastpipe
+
+dmenu_args=()
+delay="12"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in 
+
+        --type)
+            typeit=1
+            shift
+            ;;
+
+        --delay)
+            if [[ -n "$2" && "$2" != -* ]]; then
+                delay="$2"
+                shift 2
+            else
+                echo "passmenu-custom: option '--delay' requires an argument"
+                echo "Usage: passmenu-custom <args> <dmenu_args>"
+                exit 1
+            fi
+            ;;
+
+        --hitenter)
+            hitenter=$'\n'
+            shift
+            ;;
+
+        * )
+            dmenu_args+=("$1")
+            shift
+            ;;
+
+    esac
+done
+
+if [[ -n $delay && $typeit -eq 0 ]]; then
+    echo "passmenu-custom: cannot call --delay without --type"
+fi
+
+if [[ -n $WAYLAND_DISPLAY ]]; then
+	dmenu=dmenu-wl
+	#dmenu='wofi --dmenu --sort-order=alphabetical'
+	xdotool="ydotool type -d $delay --file -"
+	#otpdisplay="wl-paste"
+elif [[ -n $DISPLAY ]]; then
+	dmenu=dmenu
+	xdotool="xdotool type --clearmodifiers --delay $delay --file -"
+
+	#otpdisplay="xclip -selection clipboard -o"
+else
+	echo "Error: No Wayland or X11 display detected" >&2
+	exit 1
+fi
+
+prefix=${PASSWORD_STORE_DIR-~/.password-store}
+password_files=( "$prefix"/**/*.gpg )
+password_files=( "${password_files[@]#"$prefix"/}" )
+password_files=( "${password_files[@]%.gpg}" )
+password=$(printf '%s\n' "${password_files[@]}" | $dmenu "${dmenu_args[@]}")
+
+[[ -n $password ]] || exit
+
+if [[ $typeit -eq 0 ]]; then
+	pass show -c "$password" 2>/dev/null
+else
+    # Logic to limit scope of password, detect
+    # if an OTP URI exists and if it does,
+    # invoke the handler. This assumes a
+    # password structure where the first line
+    # is the password and the second is the URI.
+    pass show "$password" | 
+        {
+            IFS= read -r pass
+            IFS= read -r otpuri
+
+            printf %s "$pass$hitenter" | $xdotool
+
+            # OTPs
+            [ -n "$otpuri" ] && pass otp $password -c #&& notify-send -a "dwm" "OTP" "OTP code copied to clipboard: $($otpdisplay)"
+        }
+fi
+
