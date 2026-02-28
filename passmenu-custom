@@ -37,8 +37,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -n $delay && $typeit -eq 0 ]]; then
-    echo "passmenu-custom: cannot call --delay without --type"
+if [[ $typeit -eq 0 ]]; then
+    if [[ $delay != "12" ]]; then
+        echo "passmenu-custom: cannot call --delay without --type"
+        exit
+    fi
+
+    if [[ -n $hitenter ]]; then
+        echo "passmenu-custom: cannot call --hitenter without --type"
+        exit
+    fi
 fi
 
 if [[ -n $WAYLAND_DISPLAY ]]; then
