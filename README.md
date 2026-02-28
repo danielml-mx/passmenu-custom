@@ -1,6 +1,4 @@
-## Moved to upstream distribution
+# passmenu-custom
 
-`passmenu` is now part of `pass` itself! The script is available bundled at
-[`contrib/dmenu/passmenu`][upstream]. Please go there for future updates.
+This is a fork of `passmenu` which aims to provide additional functionality.
 
-[upstream]: http://git.zx2c4.com/password-store/tree/contrib/dmenu/passmenu
